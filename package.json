@@ -1,0 +1,26 @@
+{
+  "name": "photo_scanner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "chalk": "^3.0.0",
+    "clui": "^0.3.6",
+    "eslint": "^6.8.0",
+    "eslint-plugin-node": "^11.0.0"
+  },
+  "engines": {
+    "node": ">12.13.0"
+  },
+  "engineStrict": true,
+  "dependencies": {
+    "jpeg-exif": "^1.1.4",
+    "pg": "^7.18.2",
+    "uuid": "^7.0.2"
+  }
+}
