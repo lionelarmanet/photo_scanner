@@ -3,7 +3,7 @@ const readline = require('readline');
 const exif = require('jpeg-exif');
 const { Readable, Writable, Transform, pipeline } = require('stream');
 const { Pool } = require('pg')
-const { recursiveScan } = require('./src/fs');
+const { recursiveScan } = require('./src/fs_util');
 const uuid = require('uuid');
 const path = require('path');
 
