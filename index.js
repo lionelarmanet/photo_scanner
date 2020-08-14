@@ -1,4 +1,3 @@
-const rootUrl = '/Volumes/photo/';
 const readline = require('readline');
 const exif = require('jpeg-exif');
 const { Readable, Writable, Transform, pipeline } = require('stream');
@@ -37,8 +36,6 @@ function spinner(message) {
         }
     }
 }
-
-const sp = spinner(`Recursively scanning ${rootUrl}`);
 
 async function gatherAllFilenamesFromFS(rootUrl) {
     const stats = {
@@ -83,7 +80,7 @@ class FileNamesStream extends Readable {
     }
 }
 
-const exifExtractor = new Transform({
+const exifExtractor = rootUrl => new Transform({
     objectMode: true,
     transform(chunk, encoding, callback) {
         const self = this;
@@ -125,10 +122,10 @@ async function loadIndexedFilenames() {
     }
 }
 
-async function main(pool) {
+async function main(pool, rootUrl) {
     const filesObject = await gatherAllFilenamesFromFS(rootUrl);
     const readableStream = new FileNamesStream(filesObject.fileNames);
-    const processedPhotos = pipeline(readableStream, omitIndexed(await(loadIndexedFilenames())), exifExtractor, (err) => {});
+    const processedPhotos = pipeline(readableStream, omitIndexed(await(loadIndexedFilenames())), exifExtractor(rootUrl), (err) => {});
     var x = 0;
     for await (const processed of processedPhotos) {
         sp.setMessage(`Processed ${processed.filePath} (${++x}/${filesObject.filtered})`);
@@ -148,7 +145,15 @@ pool.on('error', (err, client) => {
     throw new Error(`Unexpected error on idle client, ${err}`);
 });
 
-main(pool)
+const args = process.argv.slice(2);
+if (args.length !== 1) {
+    throw new Error("Wrong arguments");
+}
+
+const rootUrl = args[0];
+const sp = spinner(`Recursively scanning ${rootUrl}`);
+
+main(pool, rootUrl)
     .catch(err => {
         sp.cleanup();
         console.error('err', err);
@@ -157,4 +162,3 @@ main(pool)
         sp.stop();
         pool.end();
     });
-
