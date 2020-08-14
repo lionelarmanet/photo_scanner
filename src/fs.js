@@ -26,10 +26,10 @@ const filter = regex => new Transform({
 });
 
 module.exports = {
-    recursiveScanPhotos: rootUrl => {
+    recursiveScan: (rootUrl, fileExtensions) => {
         return pipeline(
             Readable.from(recursiveScan(rootUrl)),
-            filter('.jpg|.png|.jpeg|.gif|.png'),
+            filter(fileExtensions.join('|')),
             (err) => {
                 
             });

@@ -3,7 +3,7 @@ const readline = require('readline');
 const exif = require('jpeg-exif');
 const { Readable, Writable, Transform, pipeline } = require('stream');
 const { Pool } = require('pg')
-const { recursiveScanPhotos } = require('./src/fs');
+const { recursiveScan } = require('./src/fs');
 const uuid = require('uuid');
 const path = require('path');
 
@@ -30,6 +30,10 @@ function spinner(message) {
         stop: () => {
             clearInterval(interval);
             printWithSpinner(_message);
+        },
+        cleanup: () => {
+            readline.cursorTo(process.stdout, 0);    
+            process.stdout.write('');
         }
     }
 }
@@ -42,8 +46,8 @@ async function gatherAllFilenamesFromFS(rootUrl) {
         filtered: 0,
         fileNames: []
     };
-    return new Promise(resolve => {
-        recursiveScanPhotos(rootUrl)
+    return new Promise((resolve, reject) => {
+        recursiveScan(rootUrl, ['.jpg','.png','.jpeg','.gif','.png'])
             .on('omit', () => {
                 stats.removed++;
             })
@@ -55,6 +59,9 @@ async function gatherAllFilenamesFromFS(rootUrl) {
             .on('finish', () => {
                 sp.setMessage(`Recursively scanning ${rootUrl}, ${stats.filtered} / ${stats.filtered + stats.removed}`);
                 resolve(stats);
+            })
+            .on('error', (error) => {
+                reject(error);
             });
     });
 }
@@ -121,15 +128,15 @@ async function loadIndexedFilenames() {
 async function main(pool) {
     const filesObject = await gatherAllFilenamesFromFS(rootUrl);
     const readableStream = new FileNamesStream(filesObject.fileNames);
-    const p = pipeline(readableStream, omitIndexed(await(loadIndexedFilenames())), exifExtractor, (err) => {});
+    const processedPhotos = pipeline(readableStream, omitIndexed(await(loadIndexedFilenames())), exifExtractor, (err) => {});
     var x = 0;
-    for await (const ex of p) {
-        sp.setMessage(`Processed ${ex.filePath} (${++x}/${filesObject.filtered})`);
+    for await (const processed of processedPhotos) {
+        sp.setMessage(`Processed ${processed.filePath} (${++x}/${filesObject.filtered})`);
         const client = await pool.connect();
         try {
             await client.query(
                 'insert into photo_scanner.photos(photos_id, name, path, features) values ($1, $2, $3, $4)',
-                [uuid.v4(), path.basename(ex.filePath), ex.filePath, ex.meta]);
+                [uuid.v4(), path.basename(processed.filePath), processed.filePath, processed.meta]);
         } finally {
             client.release();
         }
@@ -143,6 +150,7 @@ pool.on('error', (err, client) => {
 
 main(pool)
     .catch(err => {
+        sp.cleanup();
         console.error('err', err);
     }) 
     .finally(stats => {
