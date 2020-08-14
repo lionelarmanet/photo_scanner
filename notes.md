@@ -2,7 +2,7 @@
 
 psql -h localhost -U postgres
 
-createuser -P -s -h localhost -u postgres -e app_admin
+createuser -P -s -h localhost -U postgres -e app_admin
 createuser -P -R -D  -h localhost -U postgres -e app_user
 
 psql -h localhost -U app_admin postgres
