@@ -1,3 +1,5 @@
+Run app lerna run start -- /Users/larmanet/Desktop/Maison
+
 `docker run --name postgres -v $(pwd)/pg_data:/var/lib/postgresql/data -p 10122:5432 -e POSTGRES_PASSWORD=root -d postgres:latest`
 
 psql -h localhost -U postgres
@@ -30,7 +32,6 @@ select features -> 'tags' from photo_scanner.photos where features -> 'exif' ->>
 TODOs:
 
 -   testing fwk
--   multi modules
 
 Flow:
 
